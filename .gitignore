@@ -54,10 +54,10 @@ data/raw/*
 data/staging/*
 data/normalized/*
 data/reports/*
-!data/raw/.gitkeep
-!data/staging/.gitkeep
-!data/normalized/.gitkeep
-!data/reports/.gitkeep
+
+# === REGLA CRUCIAL: No ignores los archivos .gitkeep ===
+!**/.*keep
+!**/.gitkeep
 
 # === n8n y Logs ===
 node_modules/
