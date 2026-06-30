@@ -37,3 +37,29 @@ class PaymentTransaction:
 
     balance: Optional[Decimal]
     balance_impact: Optional[str]
+
+@dataclass(slots=True)
+class BankTransaction:
+    """
+    Canonical bank transaction model.
+    """
+
+    source_system: str
+
+    account_number: str
+
+    transaction_date: datetime
+
+    description: str
+
+    debit_amount: Decimal
+
+    credit_amount: Decimal
+
+    running_balance: Decimal
+
+    currency: str
+
+    transaction_reference: Optional[str]
+
+    transaction_type: Optional[str]

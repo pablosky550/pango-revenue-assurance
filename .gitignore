@@ -63,3 +63,16 @@ data/reports/*
 node_modules/
 *.log
 .n8n/
+
+# === Data Protection ===
+data/raw/*
+!data/raw/.gitkeep
+
+data/staging/*
+!data/staging/.gitkeep
+
+data/normalized/*
+!data/normalized/.gitkeep
+
+data/reports/*
+!data/reports/.gitkeep

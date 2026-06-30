@@ -91,16 +91,58 @@ class PayPalNormalizer(BaseNormalizer):
         Normalize the raw PayPal export into the platform's canonical schema.
         """
 
-        # Select only relevant columns
-        df = self.raw_df[list(PAYPAL_COLUMN_MAPPING.keys())].copy()
+        df = self.raw_df.copy()
+
+        # Create transaction datetime
+        # Convert Time to string if needed
+        time_str = df["Time"].astype(str)
+
+        df["transaction_datetime"] = pd.to_datetime(
+            df["Date"].dt.strftime("%Y-%m-%d") + " " + time_str
+        )
+
+        if df["transaction_datetime"].isna().any():
+            raise ValueError("Some transaction datetimes could not be parsed.")
+
+        # Preserve original PayPal transaction type
+        df["raw_type"] = df["Type"]
+
+        # Select relevant columns
+        df = df[
+            [
+                "Transaction ID",
+                "Reference Txn ID",
+                "Type",
+                "raw_type",
+                "Status",
+                "transaction_datetime",
+                "Currency",
+                "Gross",
+                "Fee",
+                "Net",
+                "From Email Address",
+                "To Email Address",
+                "Balance",
+                "Balance Impact",
+            ]
+        ].copy()
 
         # Rename columns
-        df.rename(columns=PAYPAL_COLUMN_MAPPING, inplace=True)
+        df.rename(
+            columns={
+                **PAYPAL_COLUMN_MAPPING,
+                "transaction_datetime": "transaction_datetime",
+            },
+            inplace=True,
+        )
 
         # Add source system
-        df["source_system"] = "paypal"
+        df.insert(
+            0,
+            "source_system",
+            "paypal",
+        )
 
-        # Store normalized dataframe
         self.normalized_df = df
 
         print(
@@ -108,7 +150,23 @@ class PayPalNormalizer(BaseNormalizer):
         )
 
     def save(self):
-        pass
+        """
+        Save normalized transactions to CSV.
+        """
+
+        self.output_file.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        self.normalized_df.to_csv(
+            self.output_file,
+            index=False,
+        )
+
+        print(
+            f"Saved normalized dataset to:\n{self.output_file}"
+        )
 
 
 if __name__ == "__main__":
@@ -122,3 +180,4 @@ if __name__ == "__main__":
     normalizer.validate_schema()
     #normalizer.profile_dataset()
     normalizer.normalize()
+    normalizer.save()

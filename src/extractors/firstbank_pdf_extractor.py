@@ -1,79 +1,68 @@
 from pathlib import Path
 
-import pandas as pd
 import pdfplumber
+from src.parsers.firstbank_parser import FirstBankParser
 
 
 class FirstBankPDFExtractor:
     """
-    Extract raw transaction tables from a folder containing
-    FirstBank PDF statements.
+    Extract raw text lines from FirstBank PDF statements.
 
     Responsibility:
-        Folder -> Raw DataFrame
+        Folder of PDFs -> List[str]
     """
 
     def __init__(self, input_folder: Path):
         self.input_folder = input_folder
 
-        self.raw_df: pd.DataFrame | None = None
+    def extract_lines(self) -> list[str]:
 
-    def extract(self) -> pd.DataFrame:
-
-        pdf_files = sorted(
-            self.input_folder.glob("*.pdf")
-        )
+        pdf_files = sorted(self.input_folder.glob("*.pdf"))
 
         if not pdf_files:
             raise FileNotFoundError(
                 f"No PDF files found in {self.input_folder}"
             )
 
-        rows = []
+        all_lines = []
+        parser = FirstBankParser()
 
-        print(
-            f"\nFound {len(pdf_files)} PDF statements.\n"
-        )
+        print(f"\nFound {len(pdf_files)} PDF statements.\n")
 
         for pdf_file in pdf_files:
-            print(f"\nProcessing: {pdf_file.name}")
+
+            print(f"Processing: {pdf_file.name}")
 
             with pdfplumber.open(pdf_file) as pdf:
-                page = pdf.pages[0]
 
-                print("=" * 80)
-                print(f"FIRST PAGE OF: {pdf_file.name}")
-                print("=" * 80)
+                for page in pdf.pages:
 
-                text = page.extract_text()
+                    text = page.extract_text()
 
-                print(text[:2000])
+                    if not text:
+                        continue
 
-                break
+                    page_lines = text.splitlines()
 
-        self.raw_df = pd.DataFrame(rows)
+                    for line in page_lines:
 
-        print(
-            f"\nExtracted {len(self.raw_df):,} rows."
-        )
+                        if parser.is_transaction_line(line):
+                            all_lines.append(line)
 
-        return self.raw_df
+                print(f"\nExtracted {len(all_lines):,} text lines.")
+
+        return all_lines
 
 
 if __name__ == "__main__":
 
     extractor = FirstBankPDFExtractor(
-        Path(
-            "data/raw/bank/2026/2026-2092"
-        )
+        Path("data/raw/bank/2026/2026-2092")
     )
 
-    df = extractor.extract()
+    lines = extractor.extract_lines()
 
-    print()
+    print("\nFirst 40 lines:\n")
 
-    print(df.head())
-
-    print()
-
-    print(df.shape)
+    for line in lines[:40]:
+        print(line)
